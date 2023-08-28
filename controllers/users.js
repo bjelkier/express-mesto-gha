@@ -4,9 +4,19 @@ const BadRequest = require('../errors/BadRequest');
 const NotFound = require('../errors/NotFound');
 const User = require('../models/user');
 
-module.exports.getUsers = (req, res) => User.find({})
-  .then((users) => res.status(200).send({ data: users }))
-  .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+module.exports.getUsers = (req, res) => {
+  User.find({})
+    .then((users) => {
+      if (users.length === 0) {
+        res.status(404).send({ message: 'Пользователи не найдены' });
+        return;
+      }
+      res.status(200).send(users);
+    })
+    .catch(() => {
+      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
+    });
+};
 
 module.exports.getUserById = (req, res, next) => {
   const { id } = req.params;
