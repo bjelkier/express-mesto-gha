@@ -1,14 +1,22 @@
 const validationError = require('mongoose').Error.ValidationError;
 const castError = require('mongoose').Error.CastError;
-const BadRequest = require('../errors/BadRequest');
-const NotFound = require('../errors/NotFound');
 const Card = require('../models/card');
 
-module.exports.getCards = (req, res) => Card.find({})
-  .then((cards) => res.status(200).send({ data: cards }))
-  .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+module.exports.getCards = (req, res) => {
+  Card.find({})
+    .then((cards) => {
+      if (cards.length === 0) {
+        res.status(404).send({ message: 'Нет добавленных карточек' });
+        return;
+      }
+      res.status(200).send(cards);
+    })
+    .catch(() => {
+      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
+    });
+};
 
-module.exports.postCard = (req, res, next) => {
+module.exports.postCard = (req, res) => {
   const { name, link } = req.body;
 
   const cardData = {
@@ -18,28 +26,38 @@ module.exports.postCard = (req, res, next) => {
   };
 
   Card.create(cardData)
-    .then((card) => res.status(201).send({ data: card }))
+    .then((card) => {
+      res.status(201).send({ data: card });
+    })
     .catch((err) => {
       if (err instanceof validationError) {
-        next(new BadRequest('Некорректные данные при создании карточки'));
-      } else {
-        next(err);
+        res.status(400).send({ message: 'Ошибка при валидации' });
+        return;
       }
+      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
 
-module.exports.deleteCard = (req, res, next) => {
+module.exports.deleteCard = (req, res) => {
   const { cardId } = req.params;
-  return Card.findByIdAndRemove(cardId)
-    .then((card) => res.status(200).send({ data: card }))
+  Card.findByIdAndRemove(cardId)
+    .then((card) => {
+      if (!card) {
+        res.status(404).send({ message: 'Карточка с таким id не найдена' });
+        return;
+      }
+      res.status(200).send(card);
+    })
     .catch((err) => {
       if (err instanceof castError) {
-        next(new BadRequest('Некорректный id карточки'));
-      } else { next(err); }
+        res.status(400).send({ message: 'Передан некорректный id карточки' });
+        return;
+      }
+      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
 
-module.exports.likeCard = (req, res, next) => {
+module.exports.likeCard = (req, res) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
@@ -48,20 +66,20 @@ module.exports.likeCard = (req, res, next) => {
     .populate('owner')
     .then((card) => {
       if (!card) {
-        next(new NotFound('Карточка не найдена'));
+        res.status(404).send({ message: 'Карточка с таким id не найдена' });
       }
-      return res.send({ data: card });
+      return res.status(200).send({ data: card });
     })
     .catch((err) => {
       if (err instanceof castError) {
-        next(new BadRequest('Передан некорректный id карточки'));
+        res.status(400).send({ message: 'Передан некорректный id карточки' });
       } else {
-        next(err);
+        res.status(500).send({ message: 'Внутренняя ошибка сервера' });
       }
     });
 };
 
-module.exports.dislikeCard = (req, res, next) => {
+module.exports.dislikeCard = (req, res) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },
@@ -70,15 +88,15 @@ module.exports.dislikeCard = (req, res, next) => {
     .populate('owner')
     .then((card) => {
       if (!card) {
-        next(new NotFound('Карточка не найдена'));
+        res.status(404).send({ message: 'Карточка с таким id не найдена' });
       }
-      return res.send({ data: card });
+      return res.status(200).send({ data: card });
     })
     .catch((err) => {
       if (err instanceof castError) {
-        next(new BadRequest('Передан некорректный id карточки'));
+        res.status(400).send({ message: 'Передан некорректный id карточки' });
       } else {
-        next(err);
+        res.status(500).send({ message: 'Внутренняя ошибка сервера' });
       }
     });
 };

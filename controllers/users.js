@@ -24,7 +24,7 @@ module.exports.getUserById = (req, res) => {
         res.status(404).send({ message: 'Пользователь с таким id не найден' });
         return;
       }
-      res.status(201).send(user);
+      res.status(200).send(user);
     })
     .catch((err) => {
       if (err instanceof castError) {
@@ -52,7 +52,7 @@ module.exports.createUser = (req, res) => {
 module.exports.updateUser = (req, res) => {
   const { name, about } = req.body;
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .then(((user) => res.status(201).send({ data: user })))
+    .then(((user) => res.status(200).send({ data: user })))
     .catch((err) => {
       if (err instanceof validationError) {
         res.status(400).send({ message: 'Ошибка при валидации' });
@@ -65,7 +65,7 @@ module.exports.updateUser = (req, res) => {
 module.exports.updateAvatar = (req, res) => {
   const { avatar } = req.body;
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .then(((user) => res.status(201).send({ data: user })))
+    .then(((user) => res.status(200).send({ data: user })))
     .catch((err) => {
       if (err instanceof validationError) {
         res.status(400).send({ message: 'Ошибка при валидации' });
