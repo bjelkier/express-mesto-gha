@@ -7,9 +7,9 @@ module.exports.getUsers = (req, res) => {
     .then((users) => {
       if (users.length === 0) {
         res.status(404).send({ message: 'Пользователи не найдены' });
-        return;
+      } else {
+        res.status(200).send(users);
       }
-      res.status(200).send(users);
     })
     .catch(() => {
       res.status(500).send({ message: 'Внутренняя ошибка сервера' });
@@ -22,16 +22,16 @@ module.exports.getUserById = (req, res) => {
     .then((user) => {
       if (!user) {
         res.status(404).send({ message: 'Пользователь с таким id не найден' });
-        return;
+      } else {
+        res.status(200).send(user);
       }
-      res.status(200).send(user);
     })
     .catch((err) => {
       if (err instanceof castError) {
         res.status(400).send({ message: 'Передан некорректный id' });
-        return;
+      } else {
+        res.status(500).send({ message: 'Внутренняя ошибка сервера' });
       }
-      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
 
@@ -43,13 +43,9 @@ module.exports.createUser = (req, res) => {
     .catch((err) => {
       if (err instanceof validationError) {
         res.status(400).send({ message: 'Ошибка при валидации' });
-        return;
+      } else {
+        res.status(500).send({ message: 'Внутренняя ошибка сервера' });
       }
-      if (err instanceof castError) {
-        res.status(400).send({ message: 'Ошибка передачи данных' });
-        return;
-      }
-      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
 
@@ -60,9 +56,9 @@ module.exports.updateUser = (req, res) => {
     .catch((err) => {
       if (err instanceof validationError) {
         res.status(400).send({ message: 'Ошибка при валидации' });
-        return;
+      } else {
+        res.status(500).send({ message: 'Внутренняя ошибка сервера' });
       }
-      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
 
@@ -73,8 +69,8 @@ module.exports.updateAvatar = (req, res) => {
     .catch((err) => {
       if (err instanceof validationError) {
         res.status(400).send({ message: 'Ошибка при валидации' });
-        return;
+      } else {
+        res.status(500).send({ message: 'Внутренняя ошибка сервера' });
       }
-      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
