@@ -45,6 +45,10 @@ module.exports.createUser = (req, res) => {
         res.status(400).send({ message: 'Ошибка при валидации' });
         return;
       }
+      if (err instanceof castError) {
+        res.status(400).send({ message: 'Ошибка передачи данных' });
+        return;
+      }
       res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
