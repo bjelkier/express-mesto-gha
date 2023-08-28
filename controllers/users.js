@@ -1,7 +1,5 @@
 const validationError = require('mongoose').Error.ValidationError;
 const castError = require('mongoose').Error.CastError;
-const BadRequest = require('../errors/BadRequest');
-const NotFound = require('../errors/NotFound');
 const User = require('../models/user');
 
 module.exports.getUsers = (req, res) => {
@@ -18,22 +16,22 @@ module.exports.getUsers = (req, res) => {
     });
 };
 
-module.exports.getUserById = (req, res, next) => {
+module.exports.getUserById = (req, res) => {
   const { id } = req.params;
-  return User.findById(id)
-    .then(((user) => {
-      if (user) {
-        res.send({ data: user });
-      } else {
-        next(new NotFound(`Пользователь по указанному id: ${req.params.id} не найден`));
+  User.findById(id)
+    .then((user) => {
+      if (!user) {
+        res.status(404).send({ message: 'Пользователь с таким id не найден' });
+        return;
       }
-    }))
+      res.status(201).send(user);
+    })
     .catch((err) => {
       if (err instanceof castError) {
-        next(new BadRequest('Передан некорректный id'));
-      } else {
-        next(err);
+        res.status(400).send({ message: 'Передан некорректный id' });
+        return;
       }
+      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
 
@@ -43,7 +41,7 @@ module.exports.createUser = (req, res) => {
   User.create({ name, about, avatar })
     .then((user) => res.status(201).send({ data: user }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err instanceof validationError) {
         res.status(400).send({ message: 'Ошибка при валидации' });
         return;
       }
@@ -51,28 +49,28 @@ module.exports.createUser = (req, res) => {
     });
 };
 
-module.exports.updateUser = (req, res, next) => {
+module.exports.updateUser = (req, res) => {
   const { name, about } = req.body;
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .then(((user) => res.send({ data: user })))
+    .then(((user) => res.status(201).send({ data: user })))
     .catch((err) => {
       if (err instanceof validationError) {
-        next(new BadRequest('Некорректные данные'));
-      } else {
-        next(err);
+        res.status(400).send({ message: 'Ошибка при валидации' });
+        return;
       }
+      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
 
-module.exports.updateAvatar = (req, res, next) => {
+module.exports.updateAvatar = (req, res) => {
   const { avatar } = req.body;
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .then(((user) => res.send({ data: user })))
+    .then(((user) => res.status(201).send({ data: user })))
     .catch((err) => {
       if (err instanceof validationError) {
-        next(new BadRequest('Некорректные данные'));
-      } else {
-        next(err);
+        res.status(400).send({ message: 'Ошибка при валидации' });
+        return;
       }
+      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
