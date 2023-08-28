@@ -49,25 +49,54 @@ module.exports.createUser = (req, res) => {
     });
 };
 
-module.exports.updateUser = (req, res) => {
-  const { name, about } = req.body;
-  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .then(((user) => res.status(200).send({ data: user })))
-    .catch((err) => {
-      if (err instanceof validationError) {
-        res.status(400).send({ message: 'Ошибка при валидации' });
-      } else {
-        res.status(500).send({ message: 'Внутренняя ошибка сервера' });
-      }
-    });
-};
+// module.exports.updateUser = (req, res) => {
+//   const { name, about } = req.body;
+//   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
+//     .then(((user) => res.status(200).send({ data: user })))
+//     .catch((err) => {
+//       if (err instanceof validationError) {
+//         res.status(400).send({ message: 'Ошибка при валидации' });
+//       } else {
+//         res.status(500).send({ message: 'Внутренняя ошибка сервера' });
+//       }
+//     });
+// };
 
-module.exports.updateAvatar = (req, res) => {
-  const { avatar } = req.body;
-  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .then(((user) => res.status(200).send({ data: user })))
+// module.exports.updateAvatar = (req, res) => {
+//   const { avatar } = req.body;
+//   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
+//     .then(((user) => res.status(200).send({ data: user })))
+//     .catch((err) => {
+//       if (err instanceof validationError) {
+//         res.status(400).send({ message: 'Ошибка при валидации' });
+//       } else {
+//         res.status(500).send({ message: 'Внутренняя ошибка сервера' });
+//       }
+//     });
+// };
+
+module.exports.updateUser = (req, res) => {
+  const userId = req.user._id;
+
+  let userInfo;
+  if (req.path.includes('avatar')) {
+    userInfo = { avatar: req.body.avatar };
+  } else {
+    userInfo = {
+      name: req.body.name,
+      about: req.body.about,
+    };
+  }
+
+  User.findByIdAndUpdate(userId, userInfo, {
+    new: true,
+    runValidators: true,
+    upsert: false,
+  })
+    .orFail()
+    .then(((user) => res.status(200).send(user)))
     .catch((err) => {
-      if (err instanceof validationError) {
+      if (err instanceof validationError || err instanceof castError) {
         res.status(400).send({ message: 'Ошибка при валидации' });
       } else {
         res.status(500).send({ message: 'Внутренняя ошибка сервера' });
