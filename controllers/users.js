@@ -1,6 +1,7 @@
 const validationError = require('mongoose').Error.ValidationError;
 const castError = require('mongoose').Error.CastError;
 const BadRequest = require('../errors/BadRequest');
+const NotFound = require('../errors/NotFound');
 const User = require('../models/user');
 
 module.exports.getUsers = (req, res) => User.find({})
@@ -10,10 +11,16 @@ module.exports.getUsers = (req, res) => User.find({})
 module.exports.getUserById = (req, res, next) => {
   const { id } = req.params;
   return User.findById(id)
-    .then((user) => res.status(200).send({ data: user }))
+    .then(((user) => {
+      if (user) {
+        res.send({ data: user });
+      } else {
+        next(new NotFound(`Пользователь по указанному id: ${req.params.id}, не найден`));
+      }
+    }))
     .catch((err) => {
       if (err instanceof castError) {
-        next(new BadRequest('Некорректный id'));
+        next(new BadRequest('Передан некорректный id'));
       } else {
         next(err);
       }

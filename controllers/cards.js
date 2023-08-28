@@ -1,6 +1,7 @@
 const validationError = require('mongoose').Error.ValidationError;
 const castError = require('mongoose').Error.CastError;
 const BadRequest = require('../errors/BadRequest');
+const NotFound = require('../errors/NotFound');
 const Card = require('../models/card');
 
 module.exports.getCards = (req, res) => Card.find({})
@@ -47,7 +48,7 @@ module.exports.likeCard = (req, res, next) => {
     .populate('owner')
     .then((card) => {
       if (!card) {
-        return res.status(404).send({ message: 'Карточка не найдена' });
+        next(new NotFound('Карточка не найдена'));
       }
       return res.send({ data: card });
     })
@@ -69,7 +70,7 @@ module.exports.dislikeCard = (req, res, next) => {
     .populate('owner')
     .then((card) => {
       if (!card) {
-        return res.status(404).send({ message: 'Карточка не найдена' });
+        next(new NotFound('Карточка не найдена'));
       }
       return res.send({ data: card });
     })
