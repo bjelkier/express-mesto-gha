@@ -15,7 +15,7 @@ module.exports.getUserById = (req, res, next) => {
       if (user) {
         res.send({ data: user });
       } else {
-        next(new NotFound(`Пользователь по указанному id: ${req.params.id}, не найден`));
+        next(new NotFound(`Пользователь по указанному id: ${req.params.id} не найден`));
       }
     }))
     .catch((err) => {
@@ -33,9 +33,11 @@ module.exports.createUser = (req, res, next) => {
   User.create({ name, about, avatar })
     .then((user) => res.status(201).send({ data: user }))
     .catch((err) => {
-      if (err instanceof castError) {
+      if (err instanceof validationError) {
         next(new BadRequest('Некорректный id карточки'));
-      } else { next(err); }
+      } else {
+        next(err);
+      }
     });
 };
 
