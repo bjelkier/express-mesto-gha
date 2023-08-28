@@ -1,5 +1,6 @@
 const validationError = require('mongoose').Error.ValidationError;
 const castError = require('mongoose').Error.CastError;
+const BadRequest = require('../errors/BadRequest');
 const Card = require('../models/card');
 
 module.exports.getCards = (req, res) => Card.find({})
@@ -19,7 +20,7 @@ module.exports.postCard = (req, res, next) => {
     .then((card) => res.status(201).send({ data: card }))
     .catch((err) => {
       if (err instanceof validationError) {
-        next(new Error('Переданы некорректные данные при создании карточки'));
+        next(new BadRequest('Некорректные данные при создании карточки'));
       } else {
         next(err);
       }
@@ -32,7 +33,7 @@ module.exports.deleteCard = (req, res, next) => {
     .then((card) => res.status(200).send({ data: card }))
     .catch((err) => {
       if (err instanceof castError) {
-        next(new Error('Некорректный id карточки'));
+        next(new BadRequest('Некорректный id карточки'));
       } else { next(err); }
     });
 };
@@ -52,7 +53,7 @@ module.exports.likeCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err instanceof castError) {
-        next(new Error('Передан некорректный id карточки'));
+        next(new BadRequest('Передан некорректный id карточки'));
       } else {
         next(err);
       }
@@ -74,7 +75,7 @@ module.exports.dislikeCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err instanceof castError) {
-        next(new Error('Передан некорректный id карточки'));
+        next(new BadRequest('Передан некорректный id карточки'));
       } else {
         next(err);
       }

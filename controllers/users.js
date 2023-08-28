@@ -1,5 +1,6 @@
 const validationError = require('mongoose').Error.ValidationError;
 const castError = require('mongoose').Error.CastError;
+const BadRequest = require('../errors/BadRequest');
 const User = require('../models/user');
 
 module.exports.getUsers = (req, res) => User.find({})
@@ -12,7 +13,7 @@ module.exports.getUserById = (req, res, next) => {
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
       if (err instanceof castError) {
-        next(new Error('Передан некорректный id'));
+        next(new BadRequest('Некорректный id'));
       } else {
         next(err);
       }
@@ -33,7 +34,7 @@ module.exports.updateUser = (req, res, next) => {
     .then(((user) => res.send({ data: user })))
     .catch((err) => {
       if (err instanceof validationError) {
-        next(new Error('Переданы некорректные данные'));
+        next(new BadRequest('Некорректные данные'));
       } else {
         next(err);
       }
@@ -46,7 +47,7 @@ module.exports.updateAvatar = (req, res, next) => {
     .then(((user) => res.send({ data: user })))
     .catch((err) => {
       if (err instanceof validationError) {
-        next(new Error('Переданы некорректные данные'));
+        next(new BadRequest('Некорректные данные'));
       } else {
         next(err);
       }
