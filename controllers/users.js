@@ -20,12 +20,16 @@ module.exports.getUserById = (req, res, next) => {
     });
 };
 
-module.exports.createUser = (req, res) => {
+module.exports.createUser = (req, res, next) => {
   const { name, about, avatar } = req.body;
 
   User.create({ name, about, avatar })
     .then((user) => res.status(201).send({ data: user }))
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch((err) => {
+      if (err instanceof castError) {
+        next(new BadRequest('Некорректный id карточки'));
+      } else { next(err); }
+    });
 };
 
 module.exports.updateUser = (req, res, next) => {
