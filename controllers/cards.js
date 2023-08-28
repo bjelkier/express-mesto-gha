@@ -7,9 +7,9 @@ module.exports.getCards = (req, res) => {
     .then((cards) => {
       if (cards.length === 0) {
         res.status(404).send({ message: 'Нет добавленных карточек' });
-        return;
+      } else {
+        res.status(200).send(cards);
       }
-      res.status(200).send(cards);
     })
     .catch(() => {
       res.status(500).send({ message: 'Внутренняя ошибка сервера' });
@@ -32,9 +32,9 @@ module.exports.postCard = (req, res) => {
     .catch((err) => {
       if (err instanceof validationError) {
         res.status(400).send({ message: 'Ошибка при валидации' });
-        return;
+      } else {
+        res.status(500).send({ message: 'Внутренняя ошибка сервера' });
       }
-      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
 
@@ -44,16 +44,16 @@ module.exports.deleteCard = (req, res) => {
     .then((card) => {
       if (!card) {
         res.status(404).send({ message: 'Карточка с таким id не найдена' });
-        return;
+      } else {
+        res.status(200).send(card);
       }
-      res.status(200).send(card);
     })
     .catch((err) => {
       if (err instanceof castError) {
         res.status(400).send({ message: 'Передан некорректный id карточки' });
-        return;
+      } else {
+        res.status(500).send({ message: 'Внутренняя ошибка сервера' });
       }
-      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
     });
 };
 
@@ -67,8 +67,9 @@ module.exports.likeCard = (req, res) => {
     .then((card) => {
       if (!card) {
         res.status(404).send({ message: 'Карточка с таким id не найдена' });
+      } else {
+        res.status(200).send({ data: card });
       }
-      return res.status(200).send({ data: card });
     })
     .catch((err) => {
       if (err instanceof castError) {
@@ -89,8 +90,9 @@ module.exports.dislikeCard = (req, res) => {
     .then((card) => {
       if (!card) {
         res.status(404).send({ message: 'Карточка с таким id не найдена' });
+      } else {
+        res.status(200).send({ data: card });
       }
-      return res.status(200).send({ data: card });
     })
     .catch((err) => {
       if (err instanceof castError) {
