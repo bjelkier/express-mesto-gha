@@ -41,7 +41,7 @@ module.exports.createUser = (req, res) => {
   User.create({ name, about, avatar })
     .then((user) => res.status(201).send({ data: user }))
     .catch((err) => {
-      if (err instanceof validationError) {
+      if (err instanceof validationError || err instanceof castError) {
         res.status(400).send({ message: 'Ошибка при валидации' });
       } else {
         res.status(500).send({ message: 'Внутренняя ошибка сервера' });
