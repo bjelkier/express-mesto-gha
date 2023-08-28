@@ -2,19 +2,9 @@ const validationError = require('mongoose').Error.ValidationError;
 const castError = require('mongoose').Error.CastError;
 const Card = require('../models/card');
 
-module.exports.getCards = (req, res) => {
-  Card.find({})
-    .then((cards) => {
-      if (cards.length === 0) {
-        res.status(404).send({ message: 'Нет добавленных карточек' });
-      } else {
-        res.status(200).send(cards);
-      }
-    })
-    .catch(() => {
-      res.status(500).send({ message: 'Внутренняя ошибка сервера' });
-    });
-};
+module.exports.getCards = (req, res) => Card.find({})
+  .then((cards) => res.status(200).send({ data: cards }))
+  .catch(() => res.status(500).send({ message: 'Внутренняя ошибка сервера' }));
 
 module.exports.postCard = (req, res) => {
   const { name, link } = req.body;
