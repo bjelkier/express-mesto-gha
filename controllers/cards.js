@@ -51,9 +51,13 @@ module.exports.deleteCard = (req, res) => {
     });
 };
 
-const handleCardOperation = (req, res, operation) => {
-  const { cardId } = req.params;
-  operation(cardId)
+module.exports.likeCard = (req, res) => {
+  Card.findByIdAndUpdate(
+    req.params.cardId,
+    { $addToSet: { likes: req.user._id } },
+    { new: true },
+  )
+    .populate('owner')
     .then((card) => {
       if (!card) {
         res.status(NOT_FOUND).send({ message: 'Карточка с таким id не найдена' });
@@ -70,20 +74,25 @@ const handleCardOperation = (req, res, operation) => {
     });
 };
 
-module.exports.likeCard = (req, res) => {
-  const operation = (cardId) => Card.findByIdAndUpdate(
-    cardId,
-    { $addToSet: { likes: req.user._id } },
-    { new: true },
-  ).populate('owner');
-  handleCardOperation(req, res, operation);
-};
-
 module.exports.dislikeCard = (req, res) => {
-  const operation = (cardId) => Card.findByIdAndUpdate(
-    cardId,
+  Card.findByIdAndUpdate(
+    req.params.cardId,
     { $pull: { likes: req.user._id } },
     { new: true },
-  ).populate('owner');
-  handleCardOperation(req, res, operation);
+  )
+    .populate('owner')
+    .then((card) => {
+      if (!card) {
+        res.status(NOT_FOUND).send({ message: 'Карточка с таким id не найдена' });
+      } else {
+        res.status(200).send({ data: card });
+      }
+    })
+    .catch((err) => {
+      if (err instanceof castError) {
+        res.status(BAD_REQUEST).send({ message: 'Передан некорректный id карточки' });
+      } else {
+        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+      }
+    });
 };
