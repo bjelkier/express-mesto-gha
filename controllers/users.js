@@ -1,116 +1,115 @@
-const bcrypt = require('bcryptjs');
-
-const jwt = require('jsonwebtoken');
-
 const validationError = require('mongoose').Error.ValidationError;
 const castError = require('mongoose').Error.CastError;
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
-const INTERNAL_SERVER_ERROR = 500;
-const BAD_REQUEST = 400;
-const NOT_FOUND = 404;
-const WRONG_DATA = 401;
+const BadRequest = require('../errors/BadRequest');
+const NotFound = require('../errors/NotFound');
+const AlreadyExists = require('../errors/AlreadyExists');
 
-module.exports.getUsers = (req, res) => User.find({})
-  .then((users) => res.status(200).send({ data: users }))
-  .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' }));
+module.exports.getUsers = (req, res, next) => {
+  User.find({})
+    .then(((users) => res.send({ data: users })))
+    .catch((err) => next(err));
+};
 
-module.exports.getUserById = (req, res) => {
+module.exports.getUserById = (req, res, next) => {
   const { id } = req.params;
   User.findById(id)
-    .then((user) => {
-      if (!user) {
-        res.status(NOT_FOUND).send({ message: 'Пользователь с таким id не найден' });
+    .then(((user) => {
+      if (user) {
+        res.send({ data: user });
       } else {
-        res.status(200).send(user);
+        next(new NotFound('Пользователь с таким id не найден'));
       }
-    })
+    }))
     .catch((err) => {
       if (err instanceof castError) {
-        res.status(BAD_REQUEST).send({ message: 'Передан некорректный id' });
+        next(new BadRequest('Передан некорректный id'));
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };
 
-module.exports.createUser = (req, res) => {
+module.exports.createUser = (req, res, next) => {
   const {
-    name, about, avatar, email, password,
+    name, about, avatar, email,
   } = req.body;
 
-  bcrypt.hash(password, 10)
+  bcrypt.hash(req.body.password, 10)
     .then((hashedPassword) => {
       User.create({
         name, about, avatar, email, password: hashedPassword,
       })
-        .then((user) => res.status(201).send({ data: user }))
+        .then((user) => res.send({ data: user }))
         .catch((err) => {
-          if (err instanceof validationError || err instanceof castError) {
-            res.status(BAD_REQUEST).send({ message: 'Ошибка при валидации' });
+          if (err.code === 11000) {
+            next(new AlreadyExists('Пользователь с данным Email уже существует'));
+          }
+          if (err instanceof validationError) {
+            next(new BadRequest('Ошибка при валидации'));
           } else {
-            res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+            next(err);
           }
         });
     })
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch((err) => {
+      next(err);
+    });
 };
 
-module.exports.updateUser = (req, res) => {
+module.exports.updateUser = (req, res, next) => {
   const { name, about } = req.body;
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .then(((user) => res.status(200).send({ data: user })))
+    .then(((user) => res.send({ data: user })))
     .catch((err) => {
       if (err instanceof validationError) {
-        res.status(BAD_REQUEST).send({ message: 'Ошибка при валидации' });
+        next(new BadRequest('Ошибка при валидации'));
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };
 
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .then(((user) => res.status(200).send({ data: user })))
+    .then(((user) => res.send({ data: user })))
     .catch((err) => {
       if (err instanceof validationError) {
-        res.status(BAD_REQUEST).send({ message: 'Ошибка при валидации' });
+        next(new BadRequest('Ошибка при валидации'));
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
-
-  User.findOne({ email }).select('+password')
+  User.findUserByCredentials(email, password)
     .then((user) => {
-      if (!user) {
-        res.status(WRONG_DATA).send({ message: 'Безуспешная авторизация' });
-        return;
-      }
-
-      bcrypt.compare(password, user.password)
-        .then((matched) => {
-          if (!matched) {
-            res.status(WRONG_DATA).send({ message: 'Безуспешная авторизация' });
-            return;
-          }
-
-          const token = jwt.sign({ _id: user._id }, 'iam-extra-tired', { expiresIn: '7d' });
-
-          res.cookie('jwt', token, {
-            httpOnly: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-          }).send({ message: 'Успешная авторизация' });
-        })
-        .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' }));
+      const token = jwt.sign(
+        { _id: user._id },
+        'iam-extra-tired',
+        { expiresIn: '7d' },
+      );
+      res.cookie('jwt', token, {
+        maxAge: 3600000 * 24 * 7,
+        httpOnly: true,
+        sameSite: true,
+      });
+      res.send({ jwt: token })
+        .end();
     })
-    .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' }));
+    .catch((err) => {
+      next(err);
+    });
 };
 
-module.exports.getUserMe = (req, res) => {
-  res.status(200).send({ data: req.user });
+module.exports.getUserInfo = (req, res, next) => {
+  User.findById(req.user._id)
+    .then(((data) => res.send(data)))
+    .catch((err) => next(err));
 };

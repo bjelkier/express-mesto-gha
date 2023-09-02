@@ -1,24 +1,17 @@
 const jwt = require('jsonwebtoken');
+const WrongData = require('../errors/WrongData');
 
-const WRONG_DATA = 401;
-
-// eslint-disable-next-line consistent-return
 module.exports = (req, res, next) => {
-  const { authorization } = req.headers;
-
-  if (!authorization || !authorization.startsWith('Bearer ')) {
-    return res.status(WRONG_DATA).send({ message: 'Требуется авторизация' });
+  if (!req.cookies.jwt) {
+    next(new WrongData('Требуется авторизация'));
   }
-
-  const token = authorization.replace('Bearer ', '');
+  const token = req.cookies.jwt;
   let payload;
-
   try {
     payload = jwt.verify(token, 'iam-extra-tired');
   } catch (err) {
-    return res.status(WRONG_DATA).send({ message: 'Требуется авторизация' });
+    next(new WrongData('Требуется авторизация'));
   }
-
   req.user = payload;
   next();
 };
