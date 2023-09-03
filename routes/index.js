@@ -16,8 +16,8 @@ router.post('/signin', validationEmailAndPassword, login);
 router.post('/signup', validationEmailAndPassword, createUser);
 router.use('/users', userRouter);
 router.use('/cards', cardRouter);
-router.use('*', (req, res, next) => {
-  next(NOT_FOUND('Неверный путь'));
+router.use('*', (req, res) => {
+  res.status(NOT_FOUND).send({ message: 'Неверный путь' });
 });
 
 module.exports = router;
