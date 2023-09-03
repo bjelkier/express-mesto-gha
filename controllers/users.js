@@ -2,13 +2,10 @@ const validationError = require('mongoose').Error.ValidationError;
 const castError = require('mongoose').Error.CastError;
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const BadRequest = require('../errors/BadRequest');
-const AlreadyExists = require('../errors/AlreadyExists');
 const User = require('../models/user');
-
-const INTERNAL_SERVER_ERROR = 500;
-const BAD_REQUEST = 400;
-const NOT_FOUND = 404;
+const {
+  BAD_REQUEST, NOT_FOUND, INTERNAL_SERVER_ERROR, CONFLICT,
+} = require('../utils/constants');
 
 module.exports.getUsers = (req, res) => User.find({})
   .then((users) => res.status(200).send({ data: users }))
@@ -70,10 +67,10 @@ module.exports.createUser = (req, res, next) => {
         }))
         .catch((err) => {
           if (err.code === 11000) {
-            next(new AlreadyExists('Данный email уже используется'));
+            res.status(CONFLICT).send({ message: 'Данный email уже используется' });
           }
           if (err instanceof validationError) {
-            next(new BadRequest('Некорректные данные при создании пользователя'));
+            res.status(BAD_REQUEST).send({ message: 'Ошибка при валидации' });
           } else {
             next(err);
           }

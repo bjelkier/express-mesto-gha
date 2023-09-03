@@ -4,5 +4,5 @@ module.exports = {
   NOT_FOUND: 404,
   UNAUTHORIZED: 401,
   CONFLICT: 409,
-  SECRET_KEY: 'iam-extra-tired',
+  FORBIDDEN: 403,
 };
