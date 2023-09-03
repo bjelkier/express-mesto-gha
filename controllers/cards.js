@@ -6,8 +6,6 @@ const INTERNAL_SERVER_ERROR = 500;
 const BAD_REQUEST = 400;
 const NOT_FOUND = 404;
 
-const Forbidden = require('../errors/Forbidden');
-
 module.exports.getCards = (req, res) => Card.find({})
   .then((cards) => res.status(200).send({ data: cards }))
   .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' }));
@@ -34,32 +32,22 @@ module.exports.postCard = (req, res) => {
     });
 };
 
-module.exports.deleteCard = (req, res, next) => {
+module.exports.deleteCard = (req, res) => {
   const { cardId } = req.params;
-  Card.findById(cardId)
-    // eslint-disable-next-line consistent-return
+  Card.findByIdAndRemove(cardId)
     .then((card) => {
-      if (card === null) {
+      if (!card) {
         res.status(NOT_FOUND).send({ message: 'Карточка с таким id не найдена' });
+      } else {
+        res.status(200).send(card);
       }
-      if (!(card.owner.toString() === req.user._id)) {
-        return next(new Forbidden('Вы не можете удалять чужие карточки'));
-      }
-      Card.findByIdAndRemove(cardId)
-        // eslint-disable-next-line consistent-return
-        .then((data) => {
-          if (data) {
-            return res.send({ message: 'Карточка удалена' });
-          }
-        })
-        .catch((err) => {
-          if (err instanceof castError) {
-            res.status(BAD_REQUEST).send({ message: 'Передан некорректный id карточки' });
-          } else { next(err); }
-        });
     })
     .catch((err) => {
-      next(err);
+      if (err instanceof castError) {
+        res.status(BAD_REQUEST).send({ message: 'Передан некорректный id карточки' });
+      } else {
+        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+      }
     });
 };
 
