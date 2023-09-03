@@ -1,27 +1,27 @@
 const { Joi, celebrate } = require('celebrate');
 const { isURL, isEmail } = require('validator');
 const { ObjectId } = require('mongoose').Types;
-const BadRequest = require('../errors/BadRequest');
+const { BAD_REQUEST } = require('../utils/constants');
 
 const validateURL = (URL) => {
   if (isURL(URL)) {
     return URL;
   }
-  throw new BadRequest(': invalid URL');
+  throw BAD_REQUEST(': invalid URL');
 };
 
 const validateEmail = (Email) => {
   if (isEmail(Email)) {
     return Email;
   }
-  throw new BadRequest(': invalid Email');
+  throw BAD_REQUEST(': invalid Email');
 };
 
 const validateId = (Id) => {
   if (ObjectId.isValid(Id)) {
     return Id;
   }
-  throw new BadRequest(': invalid Id');
+  throw BAD_REQUEST(': invalid Id');
 };
 
 module.exports.validationUserInfo = celebrate({

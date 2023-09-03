@@ -1,7 +1,8 @@
 const router = require('express').Router();
 const userRouter = require('./users');
 const cardRouter = require('./cards');
-const NotFound = require('../errors/NotFound');
+const { NOT_FOUND } = require('../utils/constants');
+
 const {
   createUser,
   login,
@@ -16,7 +17,7 @@ router.post('/signup', validationEmailAndPassword, createUser);
 router.use('/users', userRouter);
 router.use('/cards', cardRouter);
 router.use('*', (req, res, next) => {
-  next(new NotFound('Неверный путь'));
+  next(NOT_FOUND('Неверный путь'));
 });
 
 module.exports = router;
