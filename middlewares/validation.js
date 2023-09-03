@@ -1,7 +1,7 @@
 const { Joi, celebrate } = require('celebrate');
 const { isURL, isEmail } = require('validator');
 const { ObjectId } = require('mongoose').Types;
-const BadRequest = require('../utils/BadRequest');
+const BadRequest = require('../errors/BadRequest');
 
 const validateURL = (URL) => {
   if (isURL(URL)) {

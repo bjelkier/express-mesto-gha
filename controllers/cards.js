@@ -2,15 +2,17 @@ const validationError = require('mongoose').Error.ValidationError;
 const castError = require('mongoose').Error.CastError;
 const Card = require('../models/card');
 
-const {
-  BAD_REQUEST, NOT_FOUND, INTERNAL_SERVER_ERROR, FORBIDDEN,
-} = require('../utils/constants');
+const BadRequest = require('../errors/BadRequest');
+const NotFound = require('../errors/NotFound');
+const Forbidden = require('../errors/Forbidden');
 
-module.exports.getCards = (req, res) => Card.find({})
-  .then((cards) => res.status(200).send({ data: cards }))
-  .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' }));
+module.exports.getCards = (req, res, next) => {
+  Card.find({})
+    .then((data) => res.send(data))
+    .catch((err) => next(err));
+};
 
-module.exports.postCard = (req, res) => {
+module.exports.postCard = (req, res, next) => {
   const { name, link } = req.body;
 
   const cardData = {
@@ -21,13 +23,13 @@ module.exports.postCard = (req, res) => {
 
   Card.create(cardData)
     .then((card) => {
-      res.status(201).send({ data: card });
+      res.send({ data: card });
     })
     .catch((err) => {
       if (err instanceof validationError) {
-        res.status(BAD_REQUEST).send({ message: 'Ошибка при валидации' });
+        next(new BadRequest('Ошибка при валидации'));
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };
@@ -35,12 +37,13 @@ module.exports.postCard = (req, res) => {
 module.exports.deleteCard = (req, res, next) => {
   const { cardId } = req.params;
   Card.findById(cardId)
+    // eslint-disable-next-line consistent-return
     .then((card) => {
       if (card === null) {
-        res.status(NOT_FOUND).send({ message: 'Карточка с таким id не найдена' });
+        return next(new NotFound('Карточка с таким id не найдена'));
       }
       if (!(card.owner.toString() === req.user._id)) {
-        res.status(FORBIDDEN).send({ message: 'Вы не можете удалять чужие карточки' });
+        return next(new Forbidden('Вы не можете удалять чужие карточки'));
       }
       Card.findByIdAndRemove(cardId)
         // eslint-disable-next-line consistent-return
@@ -51,7 +54,7 @@ module.exports.deleteCard = (req, res, next) => {
         })
         .catch((err) => {
           if (err instanceof castError) {
-            res.status(BAD_REQUEST).send({ message: 'Передан некорректный id карточки' });
+            next(new BadRequest('Передан некорректный id карточки'));
           } else { next(err); }
         });
     })
@@ -60,7 +63,7 @@ module.exports.deleteCard = (req, res, next) => {
     });
 };
 
-module.exports.likeCard = (req, res) => {
+module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
@@ -68,40 +71,35 @@ module.exports.likeCard = (req, res) => {
   )
     .populate('owner')
     .then((card) => {
-      if (!card) {
-        res.status(NOT_FOUND).send({ message: 'Карточка с таким id не найдена' });
-      } else {
+      if (card) {
         res.send({ data: card });
+      } else {
+        next(new NotFound('Карточка с таким id не найдена'));
       }
     })
     .catch((err) => {
       if (err instanceof castError) {
-        res.status(BAD_REQUEST).send({ message: 'Передан некорректный id карточки' });
+        next(new BadRequest('Передан некорректный id карточки'));
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };
 
-module.exports.dislikeCard = (req, res) => {
-  Card.findByIdAndUpdate(
-    req.params.cardId,
-    { $pull: { likes: req.user._id } },
-    { new: true },
-  )
-    .populate('owner')
+module.exports.dislikeCard = (req, res, next) => {
+  Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
     .then((card) => {
-      if (!card) {
-        res.status(NOT_FOUND).send({ message: 'Карточка с таким id не найдена' });
-      } else {
+      if (card) {
         res.send({ data: card });
+      } else {
+        next(new NotFound('Карточка с таким id не найдена'));
       }
     })
     .catch((err) => {
       if (err instanceof castError) {
-        res.status(BAD_REQUEST).send({ message: 'Передан некорректный id карточки' });
+        next(new BadRequest('Передан некорректный id карточки'));
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };

@@ -3,43 +3,31 @@ const castError = require('mongoose').Error.CastError;
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const {
-  BAD_REQUEST, NOT_FOUND, INTERNAL_SERVER_ERROR, CONFLICT,
-} = require('../utils/constants');
+const BadRequest = require('../errors/BadRequest');
+const NotFound = require('../errors/NotFound');
+const Conflict = require('../errors/Conflict');
 
-module.exports.getUsers = (req, res) => User.find({})
-  .then((users) => res.status(200).send({ data: users }))
-  .catch(() => res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' }));
-
-module.exports.getUserById = (req, res) => {
-  const { id } = req.params;
-  User.findById(id)
-    .then((user) => {
-      if (!user) {
-        res.status(NOT_FOUND).send({ message: 'Пользователь с таким id не найден' });
-      } else {
-        res.status(200).send(user);
-      }
-    })
-    .catch((err) => {
-      if (err instanceof castError) {
-        res.status(BAD_REQUEST).send({ message: 'Передан некорректный id' });
-      } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
-      }
-    });
+module.exports.getUsers = (req, res, next) => {
+  User.find({})
+    .then(((data) => res.send(data)))
+    .catch((err) => next(err));
 };
 
-module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-
-  User.create({ name, about, avatar })
-    .then((user) => res.status(201).send({ data: user }))
-    .catch((err) => {
-      if (err instanceof validationError || err instanceof castError) {
-        res.status(BAD_REQUEST).send({ message: 'Ошибка при валидации' });
+module.exports.getUserById = (req, res, next) => {
+  const { id } = req.params;
+  User.findById(id)
+    .then(((user) => {
+      if (user) {
+        res.send({ data: user });
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(new NotFound('Пользователь с таким id не найден'));
+      }
+    }))
+    .catch((err) => {
+      if (err instanceof castError) {
+        next(new BadRequest('Передан некорректный id'));
+      } else {
+        next(err);
       }
     });
 };
@@ -67,10 +55,10 @@ module.exports.createUser = (req, res, next) => {
         }))
         .catch((err) => {
           if (err.code === 11000) {
-            res.status(CONFLICT).send({ message: 'Данный email уже используется' });
+            next(new Conflict('Данный email уже используется'));
           }
           if (err instanceof validationError) {
-            res.status(BAD_REQUEST).send({ message: 'Ошибка при валидации' });
+            next(new BadRequest('Ошибка при валидации'));
           } else {
             next(err);
           }
@@ -81,33 +69,30 @@ module.exports.createUser = (req, res, next) => {
     });
 };
 
-const updateUser = (req, res, updateData) => {
-  const userId = req.user._id;
-  User.findByIdAndUpdate(userId, updateData, { new: true, runValidators: true })
-    .then((updatedUser) => {
-      if (!updatedUser) {
-        res.status(NOT_FOUND).send({ message: 'Пользователь не найден' });
-      } else {
-        res.status(200).send({ data: updatedUser });
-      }
-    })
+module.exports.updateUser = (req, res, next) => {
+  const { name, about } = req.body;
+  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
+    .then(((user) => res.send({ data: user })))
     .catch((err) => {
       if (err instanceof validationError) {
-        res.status(BAD_REQUEST).send({ message: 'Ошибка при валидации' });
+        next(new BadRequest('Ошибка при валидации'));
       } else {
-        res.status(INTERNAL_SERVER_ERROR).send({ message: 'Внутренняя ошибка сервера' });
+        next(err);
       }
     });
 };
 
-module.exports.updateUser = (req, res) => {
-  const { name, about } = req.body;
-  updateUser(req, res, { name, about });
-};
-
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
-  updateUser(req, res, { avatar });
+  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
+    .then(((user) => res.send({ data: user })))
+    .catch((err) => {
+      if (err instanceof validationError) {
+        next(new BadRequest('Ошибка при валидации'));
+      } else {
+        next(err);
+      }
+    });
 };
 
 module.exports.login = (req, res, next) => {
