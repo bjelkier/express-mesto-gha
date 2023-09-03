@@ -9,7 +9,7 @@ const Forbidden = require('../errors/Forbidden');
 module.exports.getCards = (req, res, next) => {
   Card.find({})
     .then((data) => res.send(data))
-    .catch((err) => next(err));
+    .catch(next);
 };
 
 module.exports.postCard = (req, res, next) => {
@@ -58,9 +58,7 @@ module.exports.deleteCard = (req, res, next) => {
           } else { next(err); }
         });
     })
-    .catch((err) => {
-      next(err);
-    });
+    .catch(next);
 };
 
 module.exports.likeCard = (req, res, next) => {

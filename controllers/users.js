@@ -10,7 +10,7 @@ const Conflict = require('../errors/Conflict');
 module.exports.getUsers = (req, res, next) => {
   User.find({})
     .then(((data) => res.send(data)))
-    .catch((err) => next(err));
+    .catch(next);
 };
 
 module.exports.getUserById = (req, res, next) => {
@@ -64,9 +64,7 @@ module.exports.createUser = (req, res, next) => {
           }
         });
     })
-    .catch((err) => {
-      next(err);
-    });
+    .catch(next);
 };
 
 module.exports.updateUser = (req, res, next) => {
@@ -112,13 +110,11 @@ module.exports.login = (req, res, next) => {
       res.send({ jwt: token })
         .end();
     })
-    .catch((err) => {
-      next(err);
-    });
+    .catch(next);
 };
 
 module.exports.getUserMe = (req, res, next) => {
   User.findById(req.user._id)
     .then(((data) => res.send(data)))
-    .catch((err) => next(err));
+    .catch(next);
 };
