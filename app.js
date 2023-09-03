@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = require('./routes/index');
+const auth = require('./middlewares/auth');
 
 const { PORT = 3000 } = process.env;
 
@@ -12,15 +13,7 @@ mongoose.connect('mongodb://0.0.0.0:27017/mestodb', {
 
 app.use(express.json());
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '64eb79e40de423db9c00f07a',
-  };
-
-  next();
-});
-
-app.use('/', router);
+app.use('/', auth, router);
 
 app.listen(PORT, () => {
 });
