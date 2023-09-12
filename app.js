@@ -4,7 +4,7 @@ const { errors } = require('celebrate');
 const router = require('./routes/index');
 
 const INTERNAL_SERVER_ERROR = 500;
-const { PORT = 3000 } = process.env;
+const { PORT = 4000 } = process.env;
 
 const app = express();
 
@@ -22,7 +22,7 @@ app.use((err, req, res, next) => {
   next();
 });
 
-mongoose.connect('mongodb://0.0.0.0:27017/mestodb', {
+mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
   useNewUrlParser: true,
 });
 
